@@ -21,8 +21,8 @@ public class TodoRepository extends FaunaDBRepository<TodoEntity> {
     public CompletableFuture<Page<TodoEntity>> findByTitle(String title, PaginationOptions po) {
         Pagination paginationQuery = Paginate(Match(Index(Value("todos_by_title")), Value(title)));
         po.getSize().ifPresent(size -> paginationQuery.size(size));
-        po.getAfter().ifPresent(after -> paginationQuery.after(Ref(Class(className), Value(after))));
-        po.getBefore().ifPresent(before -> paginationQuery.before(Ref(Class(className), Value(before))));
+        po.getAfter().ifPresent(after -> paginationQuery.after(Ref(Class(collectionName), Value(after))));
+        po.getBefore().ifPresent(before -> paginationQuery.before(Ref(Class(collectionName), Value(before))));
 
         CompletableFuture<Page<TodoEntity>> result =
                 faunaClient.query(

@@ -25,14 +25,14 @@ public abstract class FaunaDBRepository<T extends Entity> implements Repository<
     protected FaunaClient faunaClient;
 
     protected final Class<T> entityType;
-    protected final String className;
-    protected final String classIndexName;
+    protected final String collectionName;
+    protected final String collectionIndexName;
 
 
-    protected FaunaDBRepository(Class<T> entityType, String className, String classIndexName) {
+    protected FaunaDBRepository(Class<T> entityType, String collectionName, String collectionIndexName) {
         this.entityType = entityType;
-        this.className = className;
-        this.classIndexName = classIndexName;
+        this.collectionName = collectionName;
+        this.collectionIndexName = collectionIndexName;
     }
 
 
@@ -86,7 +86,7 @@ public abstract class FaunaDBRepository<T extends Entity> implements Repository<
                 faunaClient.query(
                         Select(
                                 Value("data"),
-                                Delete(Ref(Class(className), Value(id)))
+                                Delete(Ref(Collection(collectionName), Value(id)))
                         )
                 )
                         .thenApply(this::toEntity);
@@ -103,7 +103,7 @@ public abstract class FaunaDBRepository<T extends Entity> implements Repository<
                 faunaClient.query(
                         Select(
                                 Value("data"),
-                                Get(Ref(Class(className), Value(id)))
+                                Get(Ref(Collection(collectionName), Value(id)))
                         )
                 )
                         .thenApply(this::toEntity);
@@ -116,10 +116,10 @@ public abstract class FaunaDBRepository<T extends Entity> implements Repository<
 
     @Override
     public CompletableFuture<Page<T>> findAll(PaginationOptions po) {
-        Pagination paginationQuery = Paginate(Match(Index(Value(classIndexName))));
+        Pagination paginationQuery = Paginate(Match(Index(Value(collectionIndexName))));
         po.getSize().ifPresent(size -> paginationQuery.size(size));
-        po.getAfter().ifPresent(after -> paginationQuery.after(Ref(Class(className), Value(after))));
-        po.getBefore().ifPresent(before -> paginationQuery.before(Ref(Class(className), Value(before))));
+        po.getAfter().ifPresent(after -> paginationQuery.after(Ref(Collection(collectionName), Value(after))));
+        po.getBefore().ifPresent(before -> paginationQuery.before(Ref(Collection(collectionName), Value(before))));
 
         CompletableFuture<Page<T>> result =
                 faunaClient.query(
@@ -139,9 +139,9 @@ public abstract class FaunaDBRepository<T extends Entity> implements Repository<
                 Select(
                         Value("data"),
                         If(
-                                Exists(Ref(Class(className), id)),
-                                Replace(Ref(Class(className), id), Obj("data", data)),
-                                Create(Ref(Class(className), id), Obj("data", data))
+                                Exists(Ref(Collection(collectionName), id)),
+                                Replace(Ref(Collection(collectionName), id), Obj("data", data)),
+                                Create(Ref(Collection(collectionName), id), Obj("data", data))
                         )
                 );
 
