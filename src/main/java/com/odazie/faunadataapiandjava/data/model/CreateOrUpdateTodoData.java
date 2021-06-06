@@ -1,11 +1,11 @@
 package com.odazie.faunadataapiandjava.data.model;
 
-public class CreateOrReplaceTodoData {
+public class CreateOrUpdateTodoData {
 
     private String title;
     private String description;
 
-    public CreateOrReplaceTodoData(String title, String description) {
+    public CreateOrUpdateTodoData(String title, String description) {
         this.title = title;
         this.description = description;
     }

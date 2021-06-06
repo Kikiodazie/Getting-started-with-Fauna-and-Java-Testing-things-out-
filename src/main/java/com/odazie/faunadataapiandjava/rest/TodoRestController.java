@@ -1,19 +1,16 @@
 package com.odazie.faunadataapiandjava.rest;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.odazie.faunadataapiandjava.data.model.CreateOrReplaceTodoData;
+import com.odazie.faunadataapiandjava.data.TodoEntity;
+import com.odazie.faunadataapiandjava.data.common.Page;
+import com.odazie.faunadataapiandjava.data.common.PaginationOptions;
+import com.odazie.faunadataapiandjava.data.model.CreateOrUpdateTodoData;
 import com.odazie.faunadataapiandjava.service.TodoService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -22,35 +19,73 @@ public class TodoRestController {
     @Autowired
     private TodoService todoService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
 
     @PostMapping("/todos")
-    public CompletableFuture<ResponseEntity> createTodo(HttpEntity<String> httpEntity) throws IOException {
+    public CompletableFuture<ResponseEntity> createTodo(@RequestBody CreateOrUpdateTodoData data) {
 
-        String requestBody = httpEntity.getBody();
-
-        if(isCreateReplacePostData(requestBody)) {
-            CreateOrReplaceTodoData data = deserializeCreateReplacePostData(requestBody);
-            CompletableFuture<ResponseEntity> result = todoService.createTodo(data)
-                    .thenApply(todoEntity -> new ResponseEntity(todoEntity, HttpStatus.CREATED));
-
-            return result;
-        }
-
-        return CompletableFuture.completedFuture(new ResponseEntity(HttpStatus.BAD_REQUEST));
+        return todoService.createTodo(data)
+                .thenApply(todoEntity -> new ResponseEntity(todoEntity, HttpStatus.CREATED));
     }
 
-    private Boolean isCreateReplacePostData(String json) throws IOException {
-        try {
-            objectMapper.readValue(json, CreateOrReplaceTodoData.class);
-            return true;
-        } catch (JsonParseException | JsonMappingException e) {
-            return false;
-        }
+
+    @GetMapping("/todos/{id}")
+    public CompletableFuture<ResponseEntity> getTodo(@PathVariable("id") String id) {
+        CompletableFuture<ResponseEntity> result =
+                todoService.getTodo(id)
+                        .thenApply(optionalTodoEntity ->
+                                optionalTodoEntity
+                                        .map(todoEntity -> new ResponseEntity(todoEntity, HttpStatus.OK))
+                                        .orElseGet(() -> new ResponseEntity(HttpStatus.NOT_FOUND))
+                        );
+        return result;
     }
-    private CreateOrReplaceTodoData deserializeCreateReplacePostData(String json) throws IOException {
-        return objectMapper.readValue(json, CreateOrReplaceTodoData.class);
+
+
+    @PutMapping("/todos/{id}")
+    public CompletableFuture<ResponseEntity> updateTodo(@PathVariable("id") String id, @RequestBody CreateOrUpdateTodoData data) {
+        CompletableFuture<ResponseEntity> result =
+                todoService.updateTodo(id, data)
+                        .thenApply(optionalTodoEntity ->
+                                optionalTodoEntity
+                                        .map(todoEntity -> new ResponseEntity(todoEntity, HttpStatus.OK))
+                                        .orElseGet(() -> new ResponseEntity(HttpStatus.NOT_FOUND)
+                                        )
+                        );
+        return result;
     }
+
+    @DeleteMapping(value = "/todos/{id}")
+    public CompletableFuture<ResponseEntity> deletePost(@PathVariable("id")String id) {
+        CompletableFuture<ResponseEntity> result =
+                todoService.deleteTodo(id)
+                        .thenApply(optionalTodoEntity ->
+                                optionalTodoEntity
+                                        .map(todo -> new ResponseEntity(todo, HttpStatus.OK))
+                                        .orElseGet(() -> new ResponseEntity(HttpStatus.NOT_FOUND)
+                                        )
+                        );
+        return result;
+    }
+
+    @GetMapping("/todos")
+    public CompletableFuture<Page<TodoEntity>> getAllTodos(
+            @RequestParam("size") Optional<Integer> size,
+            @RequestParam("before") Optional<String> before,
+            @RequestParam("after") Optional<String> after) {
+        PaginationOptions po = new PaginationOptions(size, before, after);
+        CompletableFuture<Page<TodoEntity>> result = todoService.getAllTodos(po);
+        return result;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 }
